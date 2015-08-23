@@ -2,7 +2,7 @@
 
 ### Description
 
-The semaphore maintains an internal count which starts at 0 and is:
+A locking construct. The semaphore maintains an internal count which starts at 0 and is:
 
 * Incremented by *Signal()*
 * Decremented by *Wait()*
