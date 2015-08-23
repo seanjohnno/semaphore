@@ -2,7 +2,7 @@ package semaphore
 
 import (
 	"testing"
-	"time"
+	//"time"
 	"sync"
 )
 
@@ -28,12 +28,9 @@ func TestSemaphore(t *testing.T) {
 	s.Wait()	// Count = 1
 	s.Wait()	// Count = 0
 	
-	go DelayedSignal(s, 2)
-	s.Wait()
-
-	// Delay so 
 	m.Lock()
-	defer m.Unlock()
+	DelayedSignal(s, 2)
+	s.Wait()
 
 	// Test that we can acquire here again as we called signal twice
 	if !(s.TryAcquire()) {
@@ -42,14 +39,13 @@ func TestSemaphore(t *testing.T) {
 }
 
 func DelayedSignal(sem *CountingSemaphore, signalCount int) {
-	time.Sleep(100 * time.Millisecond)
 
-	// Lock so all signals complete before control returns to TestSemaphore
-	m.Lock()
-	defer m.Unlock()
+	// Lock so all signals complete before control returns to TestSemaphore	
 
 	for i := 0; i < signalCount; i++ {
 		sem.Signal()
 	}
+
+	defer m.Unlock()
 }
 

@@ -24,22 +24,21 @@ type CountingSemaphore struct {
 	// SyncLock is used to synchronise the methods of this objects
 	SyncLock sync.Mutex
 
-	// Lock is the underlying mutex used to Lock/Pause if the Count goes below zero
-	Lock sync.Mutex
+	WaitingChan chan bool
 }
 
 // Wait decrements the Count by 1 and will pause/block on the underlying lock if the count goes below zero
 func (this *CountingSemaphore) Wait() {
 	this.SyncLock.Lock()
-
 	this.Count--
-
+	
 	if this.Count < 0 {
 		this.SyncLock.Unlock()
-		this.Lock.Lock()
-	} else {
-		this.SyncLock.Unlock()
+		<- this.WaitingChan
+		this.SyncLock.Lock()
 	}
+
+	this.SyncLock.Unlock()
 }
 
 // TryAcquire is non blocking. It'll return true and decrement the count if its currently positive, false if Count <= 0
@@ -61,7 +60,7 @@ func (this *CountingSemaphore) Signal() {
 	defer this.SyncLock.Unlock()
 
 	if this.Count < 0 {
-		this.Lock.Unlock()
+		this.WaitingChan <- true
 	}
 
 	this.Count++
@@ -73,9 +72,6 @@ func (this *CountingSemaphore) Signal() {
 
 // New creates a new CountingSemaphore
 func New() *CountingSemaphore {
-	cs := &CountingSemaphore{}
-
-	// Lock starts in wait state as it need to wait until a matching call to signal
-	cs.Lock.Lock()
+	cs := &CountingSemaphore{ WaitingChan: make(chan bool)}
 	return cs
 }
